@@ -264,7 +264,7 @@ class Portfolio(object):
         self._add_stock_data(stock.data)
 
         # update quantities of portfolio
-        self._update()
+        # self._update() # the update will be done at the end of building portfolio
 
     def _add_stock_data(self, df):
         # loop over columns in given dataframe
@@ -1041,14 +1041,16 @@ def _build_portfolio_from_df(data, pf_allocation=None, datacolumns=["Adj. Close"
     pf = Portfolio()
     for i in range(len(pf_allocation)):
         # get name of stock
-        name = pf_allocation.loc[i].Name
+        name = pf_allocation.iloc[i].Name
         # extract data column(s) of said stock
         stock_data = data.loc[:, [name]].copy(deep=True)
         # if only one data column per stock exists, give dataframe a name
         if len(datacolumns) == 1:
             stock_data.name = datacolumns[0]
         # create Stock instance and add it to portfolio
-        pf.add_stock(Stock(pf_allocation.loc[i], data=stock_data))
+        pf.add_stock(Stock(pf_allocation.iloc[i], data=stock_data))
+    # update the portfolio
+    pf._update()
     return pf
 
 
