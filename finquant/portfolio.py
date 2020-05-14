@@ -235,7 +235,7 @@ class Portfolio(object):
             # now that this changed, update other quantities
             self._update()
 
-    def add_stock(self, stock):
+    def add_stock(self, stock, defer_update=False):
         """Adds a stock of type ``Stock`` to the portfolio. Each time ``add_stock``
         is called, the following instance variables are updated:
 
@@ -253,6 +253,7 @@ class Portfolio(object):
 
         :Input:
          :stock: an object of ``Stock``
+         :defer_update: bool, if True _update() is not called after the stock is added.
         """
         # adding stock to dictionary containing all stocks provided
         self.stocks.update({stock.name: stock})
@@ -263,8 +264,9 @@ class Portfolio(object):
         # also add stock data of stock to the dataframe
         self._add_stock_data(stock.data)
 
-        # update quantities of portfolio
-        self._update()
+        if not defer_update:
+            # update quantities of portfolio
+            self._update()
 
     def _add_stock_data(self, df):
         # loop over columns in given dataframe
@@ -1047,8 +1049,10 @@ def _build_portfolio_from_df(data, pf_allocation=None, datacolumns=["Adj. Close"
         # if only one data column per stock exists, give dataframe a name
         if len(datacolumns) == 1:
             stock_data.name = datacolumns[0]
-        # create Stock instance and add it to portfolio
-        pf.add_stock(Stock(pf_allocation.loc[i], data=stock_data))
+        # create Stock instance and add it to portfolio, defer updating until all stocks are added.
+        pf.add_stock(Stock(pf_allocation.loc[i], data=stock_data), defer_update=True)
+    # after stocks have been added, manually call the update to compute portfolio properties
+    pf._update()
     return pf
 
 
