@@ -34,6 +34,17 @@ def daily_returns(data):
     """
     return data.pct_change().dropna(how="all").replace([np.inf, -np.inf], np.nan)
 
+def weighted_mean_daily_returns(data, weights):
+    """Returns DataFrame with the daily weighted mean returns
+
+    :Input:
+      :data: ``pandas.DataFrame`` with daily stock prices
+      :weights: ``numpy.ndarray``/``pd.Series`` of weights
+
+    :Output:
+      :ret: ``numpy.array`` of weighted mean daily percentage change of Returns
+    """
+    return np.dot(daily_returns(data), weights)
 
 def daily_log_returns(data):
     """

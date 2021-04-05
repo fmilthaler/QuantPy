@@ -1,7 +1,7 @@
 import pandas as pd
-from finquant.returns import cumulative_returns, daily_returns
+import numpy as np
+from finquant.returns import cumulative_returns, daily_returns, weighted_mean_daily_returns
 from finquant.returns import daily_log_returns, historical_mean_return
-
 
 def test_cumulative_returns():
     orig = [
@@ -35,6 +35,21 @@ def test_daily_returns():
     assert all(abs(ret["1"].values - orig[0]) <= 1e-15)
     assert all(abs(ret["2"].values - orig[1]) <= 1e-15)
 
+def test_weighted_daily_mean_returns():
+    l1 = [ 1., 1.5, 2.25, 3.375 ]
+    l2 = [ 1., 2., 4., 8. ]
+    expected = [ 0.5 * 0.25 + 1 * 0.75 for i in range(len(l1)-1) ]
+    weights = np.array([ 0.25, 0.75 ])
+    d = { "1": l1, "2": l2 }
+    df = pd.DataFrame(d)
+    ret = weighted_mean_daily_returns(df, weights)
+    assert all(abs(ret - expected) <= 1e-15)
+
+    d = { "1": l1 }
+    expected = [ 0.5 for i in range(len(l1)-1) ]
+    df = pd.DataFrame(d)
+    ret = weighted_mean_daily_returns(df, np.array([1]))
+    assert all(abs(ret - expected) <= 1e-15)
 
 def test_daily_log_returns():
     orig = [

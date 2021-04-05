@@ -51,7 +51,7 @@ Finally, functions are implemented to generated the following plots:
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
-from finquant.quants import weighted_mean, weighted_std, sharpe_ratio
+from finquant.quants import weighted_mean, weighted_std, sharpe_ratio, sortino_ratio, downside_risk
 from finquant.returns import historical_mean_return
 from finquant.returns import daily_returns, cumulative_returns
 from finquant.returns import daily_log_returns
@@ -179,7 +179,9 @@ class Portfolio(object):
         self.data = pd.DataFrame()
         self.expected_return = None
         self.volatility = None
+        self.downside_risk = None
         self.sharpe = None
+        self.sortino = None
         self.skew = None
         self.kurtosis = None
         self.totalinvestment = None
@@ -282,7 +284,9 @@ class Portfolio(object):
             self.totalinvestment = self.portfolio.Allocation.sum()
             self.expected_return = self.comp_expected_return(freq=self.freq)
             self.volatility = self.comp_volatility(freq=self.freq)
+            self.downside_risk = self.comp_downside_risk(freq=self.freq)
             self.sharpe = self.comp_sharpe()
+            self.sortino = self.comp_sortino()
             self.skew = self._comp_skew()
             self.kurtosis = self._comp_kurtosis()
 
@@ -402,6 +406,19 @@ class Portfolio(object):
         self.volatility = volatility
         return volatility
 
+    def comp_downside_risk(self, freq=252):
+        """Computes the downside risk of the portfolio.
+
+        :Input:
+         :freq: ``int`` (default: ``252``), number of trading days, default
+             value corresponds to trading days in a year
+
+        :Output:
+         :volatility: Downside risk of stock.
+        """
+        return downside_risk(self.data, self.comp_weights(), self.risk_free_rate) * np.sqrt(freq)
+
+
     def comp_cov(self):
         """Compute and return a ``pandas.DataFrame`` of the covariance matrix
         of the portfolio.
@@ -426,6 +443,15 @@ class Portfolio(object):
         self.sharpe = sharpe
         return sharpe
 
+    def comp_sortino(self, freq=252):
+        """Compute and return the Sortino Ratio of the portfolio
+
+        :Output:
+         :sortino: ``float``, the Sortino Ratio of the portfolio
+         May be NaN if the portoflio outperformed the risk free rate at every point
+        """
+        return sortino_ratio(self.expected_return, self.downside_risk, self.risk_free_rate)
+         
     def _comp_skew(self):
         """Computes and returns the skewness of the stocks in the portfolio."""
         return self.data.skew()
@@ -702,7 +728,9 @@ class Portfolio(object):
         string += "\nRisk free rate: {}".format(self.risk_free_rate)
         string += "\nPortfolio Expected Return: {:0.3f}".format(self.expected_return)
         string += "\nPortfolio Volatility: {:0.3f}".format(self.volatility)
+        string += "\nPortfolio Downside Risk: {:0.3f}".format(self.downside_risk)
         string += "\nPortfolio Sharpe Ratio: {:0.3f}".format(self.sharpe)
+        string += "\nPortfolio Sortino Ratio: {:0.3f}".format(self.sortino)
         string += "\n\nSkewness:"
         string += "\n" + str(self.skew.to_frame().transpose())
         string += "\n\nKurtosis:"
@@ -1189,6 +1217,7 @@ def build_portfolio(**kwargs):
         or pf.stocks == {}
         or pf.expected_return is None
         or pf.volatility is None
+        or pf.downside_risk is None
         or pf.sharpe is None
         or pf.skew is None
         or pf.kurtosis is None
